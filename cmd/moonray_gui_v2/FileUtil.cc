@@ -5,6 +5,14 @@
 
 #include <moonray/application/RaasApplication.h>
 #include <moonray/rendering/rndr/RenderContext.h>
+#include <scene_rdl2/scene/rdl2/SceneContext.h>
+#include <scene_rdl2/scene/rdl2/SceneObject.h>
+#include <scene_rdl2/scene/rdl2/SceneClass.h>
+#include <scene_rdl2/scene/rdl2/Attribute.h>
+#include <scene_rdl2/scene/rdl2/Types.h>
+#include <scene_rdl2/scene/rdl2/Light.h>
+#include <scene_rdl2/scene/rdl2/LightFilter.h>
+#include <scene_rdl2/scene/rdl2/Map.h>
 
 #include <regex>
 #include <fstream>
@@ -132,10 +140,136 @@ void parseRdlaFileForReferences (
     referencedRdlaFiles.insert(newReferencedRdlaFiles.begin(), newReferencedRdlaFiles.end());
 }
 
+static bool isTextureFile(const std::string& path)
+{
+    // Compare extension case-insensitively so .EXR and .TX are also matched.
+    auto lowerN = [&](size_t n) {
+        if (path.size() < n) return std::string{};
+        std::string ext = path.substr(path.size() - n);
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        return ext;
+    };
+    if (lowerN(4) == ".exr") return true;
+    if (lowerN(3) == ".tx")  return true;
+    return false;
+}
+
+static void collectTexturesFromObject(const scene_rdl2::rdl2::SceneObject& obj,
+                                      std::set<std::string>& textureFiles)
+{
+    const scene_rdl2::rdl2::SceneClass& sc = obj.getSceneClass();
+    for (auto it = sc.beginAttributes(); it != sc.endAttributes(); ++it) {
+        const scene_rdl2::rdl2::Attribute* attr = *it;
+
+        // Only consider attributes explicitly declared as file paths.
+        // This excludes output paths, stats files, etc. that also happen
+        // to have .exr/.tx extensions but are not texture inputs.
+        if (!(attr->getFlags() & scene_rdl2::rdl2::FLAGS_FILENAME)) continue;
+
+        if (attr->getType() == scene_rdl2::rdl2::TYPE_STRING) {
+            const scene_rdl2::rdl2::AttributeKey<scene_rdl2::rdl2::String> key(*attr);
+            const std::string& val = obj.get(key);
+            if (!val.empty() && isTextureFile(val)) {
+                textureFiles.insert(val);
+            }
+        } else if (attr->getType() == scene_rdl2::rdl2::TYPE_STRING_VECTOR) {
+            const scene_rdl2::rdl2::AttributeKey<scene_rdl2::rdl2::StringVector> key(*attr);
+            const scene_rdl2::rdl2::StringVector& vec = obj.get(key);
+            for (const auto& val : vec) {
+                if (!val.empty() && isTextureFile(val)) {
+                    textureFiles.insert(val);
+                }
+            }
+        }
+    }
+}
+
+void collectTextureFiles(const moonray::rndr::RenderContext& renderContext,
+                         int mode,
+                         std::set<std::string>& textureFiles)
+{
+    // mode 0 = off, nothing to do
+    if (mode == 0) return;
+
+    const scene_rdl2::rdl2::SceneContext& ctx = renderContext.getSceneContext();
+
+    for (auto it = ctx.beginSceneObject(); it != ctx.endSceneObject(); ++it) {
+        const scene_rdl2::rdl2::SceneObject* obj = it->second;
+        if (!obj) continue;
+
+        if (mode == 1) {
+            // Lights and light filters only
+            if (!obj->isA<scene_rdl2::rdl2::Light>() &&
+                !obj->isA<scene_rdl2::rdl2::LightFilter>()) {
+                continue;
+            }
+        }
+        // mode == 2 (full): collect from all objects
+
+        collectTexturesFromObject(*obj, textureFiles);
+    }
+}
+
+void touchTextureObjects(moonray::rndr::RenderContext& renderContext,
+                         const std::set<std::string>& changedFiles)
+{
+    scene_rdl2::rdl2::SceneContext& ctx = renderContext.getSceneContext();
+
+    for (auto it = ctx.beginSceneObject(); it != ctx.endSceneObject(); ++it) {
+        scene_rdl2::rdl2::SceneObject* obj = it->second;
+        if (!obj) continue;
+
+        const scene_rdl2::rdl2::SceneClass& sc = obj->getSceneClass();
+        bool touched = false;
+
+        for (auto attrIt = sc.beginAttributes(); attrIt != sc.endAttributes(); ++attrIt) {
+            const scene_rdl2::rdl2::Attribute* attr = *attrIt;
+
+            // Only touch attributes declared as file paths (same guard as collect).
+            if (!(attr->getFlags() & scene_rdl2::rdl2::FLAGS_FILENAME)) continue;
+
+            if (attr->getType() == scene_rdl2::rdl2::TYPE_STRING) {
+                const scene_rdl2::rdl2::AttributeKey<scene_rdl2::rdl2::String> key(*attr);
+                // Copy the value - get() returns a reference into attribute storage
+                // which would be invalidated by the set() calls below.
+                const std::string val = obj->get(key);
+                if (!val.empty() && changedFiles.count(val)) {
+                    if (!touched) {
+                        obj->beginUpdate();
+                        touched = true;
+                    }
+                    obj->set(key, std::string());
+                    obj->set(key, val);
+                }
+            } else if (attr->getType() == scene_rdl2::rdl2::TYPE_STRING_VECTOR) {
+                const scene_rdl2::rdl2::AttributeKey<scene_rdl2::rdl2::StringVector> key(*attr);
+                const scene_rdl2::rdl2::StringVector& vec = obj->get(key);
+                bool vecChanged = false;
+                for (const auto& val : vec) {
+                    if (!val.empty() && changedFiles.count(val)) { vecChanged = true; break; }
+                }
+                if (vecChanged) {
+                    if (!touched) {
+                        obj->beginUpdate();
+                        touched = true;
+                    }
+                    scene_rdl2::rdl2::StringVector copy = vec;
+                    obj->set(key, scene_rdl2::rdl2::StringVector());
+                    obj->set(key, copy);
+                }
+            }
+        }
+
+        if (touched) {
+            obj->endUpdate();
+        }
+    }
+}
+
 std::string getConfigDirectory()
 {
     std::string configDir;
-    
+
 #ifdef _WIN32
     // Windows: Use APPDATA environment variable
     const char* appData = std::getenv("APPDATA");
