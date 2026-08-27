@@ -12,15 +12,6 @@
 #include <fstream>
 #include <GLFW/glfw3.h>
 
-#ifdef __ARM_NEON__
-// This works around OIIO including x86 based headers due to detection of SSE
-// support due to sse2neon.h being included elsewhere
-#define __IMMINTRIN_H
-#define __NMMINTRIN_H
-#define OIIO_NO_SSE 1
-#define OIIO_NO_AVX 1
-#define OIIO_NO_AVX2 1
-#endif
 #include <OpenImageIO/imageio.h>
 
 using namespace moonray;
