@@ -69,10 +69,6 @@ target_sources(${target}
 
 target_include_directories(${target} PRIVATE ${imgui_SOURCE_DIR})
 
-if (NOT IsDarwinPlatform)
-    set(PlatformSpecificLibs atomic dl)
-endif()
-
 target_link_libraries(${target}
     PRIVATE
         McrtDenoise::denoiser
@@ -88,7 +84,7 @@ target_link_libraries(${target}
         SceneRdl2::scene_rdl2
         OpenGL::GL
         glfw
-        ${PlatformSpecificLibs}
+        ${CMAKE_DL_LIBS}
 )
 
 # Set standard compile/link options
@@ -104,4 +100,3 @@ endif()
 
 install(TARGETS ${target}
     RUNTIME DESTINATION bin)
-
