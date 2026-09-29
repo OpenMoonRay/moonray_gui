@@ -71,6 +71,12 @@ variants = [
         'refplat-vfx2026.0',
         'gcc-14.2.x'
     ],
+    [   # variant 7
+        'os-rocky-9',
+        'opt_level-optdebug',
+        'refplat-vfx2022.0',
+        'gcc-9.3.x.1'
+    ],
 ]
 
 conf_rats_variants = variants[0:2]
