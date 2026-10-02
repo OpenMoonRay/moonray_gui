@@ -285,10 +285,9 @@ Viewport::update(const fb_util::Rgb888Buffer* rgbBuffer)
 void
 Viewport::updateTexture(const int width, const int height, const unsigned char* pixelData)
 {
-    // Load existing snapshots on first frame update (deferred from constructor)
-    if (!mSnapshotsLoaded) {
-        mSnapshotManager->load();
-        mSnapshotsLoaded = true;
+    // Load existing snapshots on first frame update because creating textures requires a current GL context.
+    if (!mSnapshotManager->getSnapshotTexturesLoaded()) {
+        mSnapshotManager->loadSnapshotTextures();
     }
 
     // Delete previous texture if it exists
@@ -637,6 +636,10 @@ Viewport::handleKeyReleaseEvent(const Action action)
 void
 Viewport::handleKeyEvent(const int key, const int scancode, const int type, const int mods)
 {
+    if (inputIsBlocked()) {
+        return;
+    }
+
     const Action action = mKeyboard->getActionFromInput(mGLFWWindow, key, mods);
 
     // First, check if the interface wants to explicitly
@@ -697,6 +700,10 @@ Viewport::handleMouseReleaseEvent(const Action action)
 void
 Viewport::handleMouseEvent(const int button, const int type, const int mods)
 {
+    if (inputIsBlocked()) {
+        return;
+    }
+
     const Action action = mKeyboard->getActionFromInput(mGLFWWindow, button, mods);
 
     if (type == GLFW_PRESS) {
@@ -761,8 +768,8 @@ Viewport::getDisplayTexture() const {
     if (!mSnapshotManager) {
         return textureHandle;
     }
-    int snapshotTexture = mSnapshotManager->getChosenSnapshotTexture();
-    if (snapshotTexture != -1) {
+    const GLuint snapshotTexture = mSnapshotManager->getSelectedSnapshotTextureHandle();
+    if (snapshotTexture != 0) {
         textureHandle = snapshotTexture;
     }
     return textureHandle;

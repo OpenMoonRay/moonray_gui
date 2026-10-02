@@ -40,6 +40,7 @@ target_sources(${target}
         GuiTypes.cc
         RenderGui.cc
         viewport/interface/AxisDisplay.cc
+        viewport/interface/ConfirmDialog.cc
         viewport/interface/Dock.cc
         viewport/interface/DrawUtil.cc
         viewport/interface/ExposureWindow.cc
@@ -47,6 +48,7 @@ target_sources(${target}
         viewport/interface/HelpWindow.cc
         viewport/interface/Interface.cc
         viewport/interface/ImageDisplay.cc
+        viewport/interface/InputTextDialog.cc
         viewport/interface/KeyBindingsWindow.cc
         viewport/interface/PathVisualizerWindow.cc
         viewport/interface/PixelInspector.cc

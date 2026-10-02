@@ -52,6 +52,9 @@ public:
     // and returns a string containing relevant info
     std::string inspect(const int x, const int y) const;
 
+    // Take a snapshot and save to user's indicated path
+    void takeASnapshot();
+
     // Show previous/next snapshot
     void showPrevSnapshot();
     void showNextSnapshot();
@@ -186,6 +189,21 @@ public:
     // Sets the path visualizer setting to show only endpoints
     void setPVShowOnlyEndpoints(const bool show) { mPVShowOnlyEndpoints = show; }
 
+    bool inputIsBlocked() const
+    {
+        return mInputBlocked;
+    }
+
+    void blockInput()
+    {
+        mInputBlocked = true;
+    }
+
+    void unblockInput()
+    {
+        mInputBlocked = false;
+    }
+
 private:
     // Uses the framebuffer data to update the viewport display
     void updateFrame();
@@ -252,9 +270,6 @@ private:
     // Turn opencolorio management on/off
     void toggleOCIO();
 
-    // Take a snapshot and save to user's indicated path
-    void takeASnapshot();
-
     // Turn on/off tile progress overlay
     void toggleShowTileProgress();
 
@@ -294,6 +309,7 @@ private:
 
     bool mNeedsRefresh {true};                                  // Does the viewport need to be refreshed?
     bool mInitialResizeDone {false};                            // Whether the viewport has been sized to fit the render
+    bool mInputBlocked {false};                                 // Whether hotkey input is currently blocked
 
     DebugMode mDebugMode {RGB};                                 // Current debug mode (i.e. channel being viewed)
     bool mShowTileProgress {true};                              // Whether to show tile progress overlay
