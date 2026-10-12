@@ -67,7 +67,7 @@ ImageDisplay::draw(const Viewport* viewport, const int availWidth, const int ava
 
         /// Draw path visualizer lines on top of the image
         moonray::rndr::PathVisualizerManager* manager = viewport->getPathVisualizerManager();
-        drawPathVisualizerLines(manager, viewport->getPVShowOnlyEndpoints());
+        drawPathVisualizerLines(manager, viewport->pathVisualizerShowOnlyEndpoints());
     }
     ImGui::End();
     ImGui::PopStyleVar(2); 

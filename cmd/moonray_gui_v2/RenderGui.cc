@@ -1,4 +1,4 @@
-// Copyright 2023-2025 DreamWorks Animation LLC
+// Copyright 2023-2026 DreamWorks Animation LLC
 // SPDX-License-Identifier: Apache-2.0
 
 #include "RenderGui.h"
@@ -449,6 +449,7 @@ RenderGui::updateNavigationCam(double currentTime)
     double dt = (mLastCameraUpdateTime < 0.0) ? 0.0 : (currentTime - mLastCameraUpdateTime);
     mLastCameraUpdateTime = currentTime;
 
+    mViewport->pathVisualizerUpdateViewController();
     return cam->update(static_cast<float>(dt));
 }
 

@@ -1,4 +1,4 @@
-# Copyright 2025 DreamWorks Animation LLC
+# Copyright 2025-2026 DreamWorks Animation LLC
 # SPDX-License-Identifier: Apache-2.0
 
 find_package(glfw3 REQUIRED)
@@ -56,6 +56,7 @@ target_sources(${target}
         viewport/interface/SnapshotWindow.cc
         viewport/interface/StatusBar.cc
         viewport/Keyboard.cc
+        viewport/pathvisualizer/ViewController.cc
         viewport/SnapshotManager.cc
         viewport/Viewport.cc
 

@@ -1,4 +1,3 @@
-
 // Copyright 2026 DreamWorks Animation LLC
 // SPDX-License-Identifier: Apache-2.0
 
@@ -129,8 +128,8 @@ Interface::handleKeyPressEvent(const Action action)
     case ACTION_SNAPSHOT_PREV:                  mViewport->showPrevSnapshot();       return true;
     case ACTION_SNAPSHOT_NEXT:                  mViewport->showNextSnapshot();       return true;
     case ACTION_PATH_VISUALIZER_ON_OFF:         mViewport->pathVisualizerToggleOn(); return true;
-    case ACTION_PATH_VISUALIZER_NEXT_NODE:      mViewport->nextPathVisualizerNode(); return true;
-    case ACTION_PATH_VISUALIZER_PREV_NODE:      mViewport->prevPathVisualizerNode(); return true;
+    case ACTION_PATH_VISUALIZER_NEXT_NODE:      mViewport->pathVisualizerNextNode(); return true;
+    case ACTION_PATH_VISUALIZER_PREV_NODE:      mViewport->pathVisualizerPrevNode(); return true;
     case ACTION_WINDOW_TOGGLE_AXIS_DISPLAY:     toggleAxisDisplay();                 return true;
     default: break;
     }

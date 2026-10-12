@@ -10,6 +10,7 @@
 #include "imgui.h"
 #include "interface/Interface.h"
 #include "Keyboard.h"
+#include "pathvisualizer/ViewController.h"
 #include "SnapshotManager.h"
 
 #include <moonray/rendering/rndr/PathVisualizerManager.h>
@@ -127,11 +128,12 @@ Viewport::Viewport(CameraType initialCamType,
 :   mSnapshotManager(std::make_unique<SnapshotManager>(snapPath, this))
 ,   mKeyboard(std::make_unique<Keyboard>())
 ,   mDenoiserManager(denoiserManager)
+,   mPathVisViewController(std::make_unique<pathvisualizer::ViewController>())
 ,   mActiveCameraType(initialCamType)
 ,   mOrbitCam(std::make_unique<OrbitCam>())
 ,   mFreeCam(std::make_unique<FreeCam>())
 ,   mShowTileProgress(showTileProgress)
-{    
+{
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
         throw std::runtime_error("ERROR: Failed to initialize GLFW");
@@ -330,6 +332,13 @@ Viewport::updateFrame()
     }
 }
 
+void
+Viewport::updateRenderContext(RenderContext* context)
+{
+    mRenderContext = context;
+    mPathVisViewController->reset();
+}
+
 /// ---------------------------- Camera Methods -------------------------------------- ///
 void
 Viewport::toggleActiveCameraType()
@@ -494,51 +503,82 @@ Viewport::getRenderOutputName() const
     return roDriver->getRenderOutput(mRenderOutputIndex)->getName();
 }
 
+// -------------------------------- Path Visualizer Actions --------------------------------------------------------- //
 void
-Viewport::setPathVisualizerPixel()
+Viewport::pathVisualizerPickPixel()
 {
-    moonray::rndr::PathVisualizerManager* manager = getPathVisualizerManager();
-    if (manager && manager->isOn()) {
-        const ImVec2 pixel = mInterface->getCurrentPixel();
+    PathVisualizerManager* manager = getPathVisualizerManager();
+    assert(manager);
 
-        if (pixel.x >= 0 && pixel.y >= 0) {
-            manager->setPixel(pixel.x, pixel.y, /*update*/ true);
-        }
+    if (!manager->isOn()) {
+        return;
+    }
+    const ImVec2 pixel = mInterface->getCurrentPixel();
+
+    if (pixel.x >= 0 && pixel.y >= 0) {
+        manager->setPixel(pixel.x, pixel.y, /*update*/ true);
     }
 }
 
 void
 Viewport::pathVisualizerToggleOn()
 {
-    moonray::rndr::PathVisualizerManager* manager = getPathVisualizerManager();
-    if (manager) {
-        if (manager->isOn()) {
-            manager->turnOff();
-        } else {
-            manager->turnOn();
-        }
+    PathVisualizerManager* manager = getPathVisualizerManager();
+    assert(manager);
+
+    if (manager->isOn()) {
+        manager->turnOff();
+    } else {
+        manager->turnOn();
     }
 }
 
 void
-Viewport::prevPathVisualizerNode()
+Viewport::pathVisualizerPrevNode()
 {
-    moonray::rndr::PathVisualizerManager* manager = getPathVisualizerManager();
-    if (manager && manager->isOn()) {
-        manager->prevNode();
+    PathVisualizerManager* manager = getPathVisualizerManager();
+    assert(manager);
+    if (!manager->isOn()) {
+        return;
     }
+    manager->prevNode();
 }
 
 void
-Viewport::nextPathVisualizerNode()
+Viewport::pathVisualizerNextNode()
 {
-    moonray::rndr::PathVisualizerManager* manager = getPathVisualizerManager();
-    if (manager && manager->isOn()) {
-        manager->nextNode();
+    PathVisualizerManager* manager = getPathVisualizerManager();
+    assert(manager);
+    if (!manager->isOn()) {
+        return;
     }
+    manager->nextNode();
 }
 
-/// ------------------------------- Action Handling ---------------------------------------------------------------- ///
+bool
+Viewport::pathVisualizerCamIsInteractive() const
+{
+    return mPathVisViewController->cameraIsInteractive();
+}
+
+bool
+Viewport::pathVisualizerCamerasMatch() const
+{
+    return mPathVisViewController->camerasMatch(getPathVisualizerManager());
+}
+
+void
+Viewport::pathVisualizerChangeCameraMode(pathvisualizer::CameraMode mode)
+{
+    mPathVisViewController->changeCameraMode(getPathVisualizerManager(), mode, getNavigationCam());
+}
+void
+Viewport::pathVisualizerUpdateViewController()
+{
+    mPathVisViewController->update(getPathVisualizerManager(), getNavigationCam());
+}
+
+/// ------------------------------- Action Handling ------`---------------------------------------------------------- ///
 void
 Viewport::handlePressAction(const Action action)
 {
@@ -575,13 +615,15 @@ Viewport::handlePressAction(const Action action)
         case ACTION_FAST_PROGRESSIVE_NEXT_MODE:     mFastMode = nextFastMode(mFastMode);    mNeedsRefresh = true; break;
         case ACTION_FAST_PROGRESSIVE_PREV_MODE:     mFastMode = prevFastMode(mFastMode);    mNeedsRefresh = true; break;
 
+        // Path Visualizer actions
+        case ACTION_PATH_VISUALIZER_PREV_NODE:      pathVisualizerPrevNode();               mNeedsRefresh = true; break;
+        case ACTION_PATH_VISUALIZER_NEXT_NODE:      pathVisualizerNextNode();               mNeedsRefresh = true; break;
+        case ACTION_PICK_PATH_VISUALIZER_PIXEL:     pathVisualizerPickPixel();                                    break;
+
         // Misc actions
         case ACTION_SAVE_IMAGE:                     saveEXR(mRenderContext);                                      break;
         case ACTION_CAM_TOGGLE_ACTIVE_TYPE:         toggleActiveCameraType();               mNeedsRefresh = true; break;
-        case ACTION_PATH_VISUALIZER_PREV_NODE:      getPathVisualizerManager()->prevNode(); mNeedsRefresh = true; break;
-        case ACTION_PATH_VISUALIZER_NEXT_NODE:      getPathVisualizerManager()->nextNode(); mNeedsRefresh = true; break;
         case ACTION_TILE_PROGRESS_TOGGLE:           toggleShowTileProgress();               mNeedsRefresh = true; break;
-        case ACTION_PICK_PATH_VISUALIZER_PIXEL:     setPathVisualizerPixel();                                     break;
         case ACTION_RENDER_OUTPUT_PREV:             prevRenderOutput();                     mNeedsRefresh = true; break;
         case ACTION_RENDER_OUTPUT_NEXT:             nextRenderOutput();                     mNeedsRefresh = true; break;
         case ACTION_PRINT_KEY_BINDINGS:             mKeyboard->printKeyBindings();                                break;

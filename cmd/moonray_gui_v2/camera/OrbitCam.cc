@@ -191,12 +191,16 @@ OrbitCam::resetTransform(const Mat4f &xform, const bool makeDefault)
 
     if (!mInitialTransformSet || makeDefault) {
         mInitialTransformSet = true;
-        mInitialFocusSet = false;
         mInitialPosition = mCamera->mPosition;
         mInitialViewDir = mCamera->mViewDir;
         mInitialUp = mCamera->mUp;
         mInitialFocusDistance = mCamera->mFocusDistance;
+        mInitialFocusDistanceNeedsUpdate = true;
     }
+
+    // We must reset the focus every time we 
+    // reset the camera transform.
+    mFocusSet = false;
 
     return xform;
 }
@@ -210,24 +214,27 @@ OrbitCam::pickFocusPoint()
     // Key bindings can call this function before everything is fully ready.
     if (!mRenderContext) { return; }
     
-    // Do this function only once every time we reset the default transform
+    // Do this function only once every time we reset the transform
     // Note: We can't do picking during resetTransform() because picking uses
-    // the pbr Scene, which hasn't been initialized at that time.
-    if (mInitialFocusSet) { return; }
-    mInitialFocusSet = true;
+    // the pbr Scene, which might not be initialized at that time.
+    if (mFocusSet) { return; }
+    mFocusSet = true;
 
     const scene_rdl2::math::HalfOpenViewport vp = mRenderContext->getRezedRegionWindow();
     const int width = int(vp.width());
     const int height = int(vp.height());
     Vec3f focusPoint;
     if (pick(width / 2, height / 2, &focusPoint)) {
-
-        const Vec3f hitVec = focusPoint - mCamera->mPosition;
-        mCamera->mViewDir = normalize(hitVec);
-        mCamera->mFocusDistance = length(hitVec);
+        // Only set the focus distance; re-aiming at the (slightly off-axis) hit would change the camera xform.
+        const float focusDistance = dot(focusPoint - mCamera->mPosition, mCamera->mViewDir);
+        if (focusDistance > 0.0f) {
+            mCamera->mFocusDistance = focusDistance;
+        }
     }
-    mInitialViewDir = mCamera->mViewDir;
-    mInitialFocusDistance = mCamera->mFocusDistance;
+    if (mInitialFocusDistanceNeedsUpdate) {
+        mInitialFocusDistance = mCamera->mFocusDistance;
+        mInitialFocusDistanceNeedsUpdate = false;
+    }
 }
 
 Mat4f
