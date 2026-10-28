@@ -19,6 +19,8 @@ if(ABI_SET_VERSION)
     set(ABI_VERSION "6" CACHE STRING "If ABI_SET_VERSION is on, which version to set")
 endif()
 
+option(MOONRAY_GUI_CLIPBOARD "Enable copying the viewport image into system clipboard" OFF)
+
 # ================================================
 # Find dependencies
 # ================================================

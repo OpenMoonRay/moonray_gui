@@ -144,6 +144,9 @@ enum Action
     ACTION_TILE_PROGRESS_TOGGLE,
     ACTION_PRINT_KEY_BINDINGS,
 
+    // Output actions cont.
+    ACTION_COPY_BUFFER_TO_CLIPBOARD,
+
     // Add more actions here as needed
     ACTION_COUNT // Keep this as the last element to count the number of actions
 };
@@ -272,7 +275,8 @@ inline const std::map<std::string, std::set<Action>> ACTION_CATEGORIES = {
         ACTION_RENDER_OUTPUT_NEXT,
         ACTION_SNAPSHOT_TAKE,
         ACTION_SNAPSHOT_PREV,
-        ACTION_SNAPSHOT_NEXT
+        ACTION_SNAPSHOT_NEXT,
+        ACTION_COPY_BUFFER_TO_CLIPBOARD
     }},
     
     {"Image Controls", {

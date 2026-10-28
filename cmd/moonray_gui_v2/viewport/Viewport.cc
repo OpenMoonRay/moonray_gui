@@ -17,6 +17,11 @@
 
 #include <GLFW/glfw3.h>
 
+#ifdef MOONRAY_GUI_CLIPBOARD
+#include <clip.h>
+#include <algorithm>
+#endif
+
 using namespace moonray;
 
 namespace {
@@ -508,6 +513,80 @@ Viewport::setPathVisualizerPixel()
     }
 }
 
+#ifdef MOONRAY_GUI_CLIPBOARD
+void Viewport::copyCurrentBufferToClipboard() const
+{
+    const GLuint textureHandle = getDisplayTexture();
+    if (textureHandle == 0) {
+        Logger::error("Could not get texture handle");
+        return;
+    }
+
+    int width = 0, height = 0;
+
+    glfwMakeContextCurrent(mGLFWWindow);
+
+    // Flush unrelated GL errors
+    while (glGetError() != GL_NO_ERROR) {}
+
+    glBindTexture(GL_TEXTURE_2D, textureHandle);
+
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+
+    if (height <= 0 || width <= 0) {
+        Logger::error("Invalid dimensions");
+        return;
+    }
+
+    std::vector<uint32_t> pixels;
+    pixels.resize(width * height);
+
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        Logger::error("GL reported an error after copying the display texture: 0x", std::hex, err);
+        return;
+    }
+
+    // flipping pixels vertically in-place
+    for (int y = 0; y < height / 2; ++y) {
+        auto top_it = pixels.begin() + y * width;
+        auto bottom_it = pixels.begin() + (height - 1 - y) * width;
+        std::swap_ranges(top_it, top_it + width, bottom_it);
+    }
+
+    clip::image_spec spec;
+    spec.width = width;
+    spec.height = height;
+    spec.bits_per_pixel = 32;
+    spec.bytes_per_row = width * sizeof(uint32_t);
+    spec.red_mask = 0xff;
+    spec.green_mask = 0xff00;
+    spec.blue_mask = 0xff0000;
+    spec.alpha_mask = 0xff000000;
+    spec.red_shift = 0;
+    spec.green_shift = 8;
+    spec.blue_shift = 16;
+    spec.alpha_shift = 24;
+
+    clip::image snapshot(pixels.data(), spec);
+    if (!clip::set_image(snapshot)) {
+        Logger::error("Failed to copy image data to clipboard");
+        return;
+    }
+
+    std::cout << "Copied displayed image to clipboard" << std::endl;
+}
+#else
+void Viewport::copyCurrentBufferToClipboard() const {
+    Logger::error("Clipboard is not enabled for this build");
+}
+#endif
+
 void
 Viewport::pathVisualizerToggleOn()
 {
@@ -551,6 +630,7 @@ Viewport::handlePressAction(const Action action)
 
         // Snapshot actions
         case ACTION_SNAPSHOT_TAKE:                  takeASnapshot();                                              break;
+        case ACTION_COPY_BUFFER_TO_CLIPBOARD:       copyCurrentBufferToClipboard();                               break;
 
         // Channel actions
         case ACTION_CHANNEL_TOGGLE_RGB:             toggleDebugMode(RGB);                   mNeedsRefresh = true; break;

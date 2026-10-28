@@ -68,6 +68,7 @@ std::string getActionName(const Action action) {
     case ACTION_RENDER_OUTPUT_PREV:             return "Render Output Previous";
     case ACTION_RENDER_OUTPUT_NEXT:             return "Render Output Next";
     case ACTION_PRINT_KEY_BINDINGS:             return "Print Key Bindings";
+    case ACTION_COPY_BUFFER_TO_CLIPBOARD:       return "Copy current snapshot/buffer to clipboard";
     default:                                    return "";
     }
 }
@@ -132,6 +133,7 @@ std::string getDescription(const Action action) {
     case ACTION_RENDER_OUTPUT_PREV:             return "Show previous render output";
     case ACTION_RENDER_OUTPUT_NEXT:             return "Show next render output";
     case ACTION_PRINT_KEY_BINDINGS:             return "Print key bindings to console";
+    case ACTION_COPY_BUFFER_TO_CLIPBOARD:       return "Copy displayed image to clipboard";
     default:                                    return "";
     }
 }

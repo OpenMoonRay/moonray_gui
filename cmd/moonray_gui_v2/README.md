@@ -90,6 +90,7 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 
 ### Path Visualizer
 | Action | Hotkey | Notes |
+| ------ | ------ | ----- |
 | Toggle On/Off | `SHIFT` + `V` | |
 | Pick pixel | `LMB` | |
 | Previous node | `SHIFT` + `LEFT` | |
@@ -103,6 +104,8 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 | Save Image* | `CTRL`+`S` | Didn't exist in v1 |
 | Snapshot Take | `K` | |
 | Tile Progress Toggle* | `T` | Previously `P` |
+| Copy displayed image to clipboard* | `J` | Didn't exist in v1. Requires the `MOONRAY_GUI_CLIPBOARD` CMake build option to be explicitly enabled |
+
 
 ## Configuration Files
 

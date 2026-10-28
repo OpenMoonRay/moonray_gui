@@ -30,6 +30,7 @@ KeyboardBindings::KeyboardBindings()
     mKeyBindings.insert(KeyModPair(GLFW_KEY_G, MOD_NONE), ACTION_WINDOW_TOGGLE_KEY_BINDINGS);
     mKeyBindings.insert(KeyModPair(GLFW_KEY_H, MOD_NONE), ACTION_PRINT_KEY_BINDINGS);
     mKeyBindings.insert(KeyModPair(GLFW_KEY_I, MOD_NONE), ACTION_WINDOW_TOGGLE_SCENE_INSPECTOR);
+    mKeyBindings.insert(KeyModPair(GLFW_KEY_J, MOD_NONE), ACTION_COPY_BUFFER_TO_CLIPBOARD);
     mKeyBindings.insert(KeyModPair(GLFW_KEY_K, MOD_NONE), ACTION_SNAPSHOT_TAKE);
     mKeyBindings.insert(KeyModPair(GLFW_KEY_L, MOD_NONE), ACTION_FAST_PROGRESSIVE_TOGGLE);
     mKeyBindings.insert(KeyModPair(GLFW_KEY_M, MOD_NONE), ACTION_CAM_PRINT_MATRICES);

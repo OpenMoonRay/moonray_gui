@@ -186,6 +186,9 @@ public:
     // Sets the path visualizer setting to show only endpoints
     void setPVShowOnlyEndpoints(const bool show) { mPVShowOnlyEndpoints = show; }
 
+    // Copy snapshot/buffer to clipboard
+    void copyCurrentBufferToClipboard() const;
+
 private:
     // Uses the framebuffer data to update the viewport display
     void updateFrame();
