@@ -13,6 +13,7 @@
 namespace moonray_gui_v2 {
 
 class Keyboard;
+class Viewport;
 
 // ------------------------------------------------------------------------------------------------------------------ //
 //
@@ -37,11 +38,11 @@ public:
     ~KeyCapture() = default;
 
     // Starts listening for any user input
-    void startCapture(const Action action);
+    void startCapture(Viewport* viewport, const Action action);
 
     // Updates the capture state - MUST be called every frame when capturing
     // Handles key detection, timer management, and ESC key cancellation
-    void update();
+    void update(Viewport* viewport);
 
     // Whether we are currently in capturing mode
     bool isCapturing() const { return mState == State::CAPTURING; }
@@ -106,7 +107,7 @@ public:
 
 private:
     // Processes captured keys and determines the final key/mod pair
-    void finishCapture();
+    void finishCapture(Viewport* viewport);
 
     // Checks for new key presses and adds them to mCapturedKeys
     void detectKeyPresses();
@@ -192,10 +193,10 @@ class KeyBindingsWindow : public Component {
 
         // Draw button that displays the current key and 
         // allows for the user to change the key binding
-        void drawKeyBindingButton(Keyboard* keyboard, const Action action);
+        void drawKeyBindingButton(Viewport* viewport, const Action action);
 
         // Draw the table displaying actions and their key bindings
-        void drawKeyBindingTable(std::string header, const std::set<Action>& actions, Keyboard* keyboard);
+        void drawKeyBindingTable(std::string header, const std::set<Action>& actions, Viewport* viewport);
 
         // Draw the modal popup for key binding conflicts
         void drawConflictModal(Viewport* viewport);

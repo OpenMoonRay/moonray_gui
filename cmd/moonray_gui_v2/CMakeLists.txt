@@ -1,4 +1,4 @@
-# Copyright 2025 DreamWorks Animation LLC
+# Copyright 2025-2026 DreamWorks Animation LLC
 # SPDX-License-Identifier: Apache-2.0
 
 find_package(glfw3 REQUIRED)
@@ -40,6 +40,7 @@ target_sources(${target}
         GuiTypes.cc
         RenderGui.cc
         viewport/interface/AxisDisplay.cc
+        viewport/interface/ConfirmDialog.cc
         viewport/interface/Dock.cc
         viewport/interface/DrawUtil.cc
         viewport/interface/ExposureWindow.cc
@@ -47,6 +48,7 @@ target_sources(${target}
         viewport/interface/HelpWindow.cc
         viewport/interface/Interface.cc
         viewport/interface/ImageDisplay.cc
+        viewport/interface/InputTextDialog.cc
         viewport/interface/KeyBindingsWindow.cc
         viewport/interface/PathVisualizerWindow.cc
         viewport/interface/PixelInspector.cc
@@ -54,6 +56,7 @@ target_sources(${target}
         viewport/interface/SnapshotWindow.cc
         viewport/interface/StatusBar.cc
         viewport/Keyboard.cc
+        viewport/pathvisualizer/ViewController.cc
         viewport/SnapshotManager.cc
         viewport/Viewport.cc
 
@@ -68,10 +71,6 @@ target_sources(${target}
 )
 
 target_include_directories(${target} PRIVATE ${imgui_SOURCE_DIR})
-
-if (NOT IsDarwinPlatform)
-    set(PlatformSpecificLibs atomic dl)
-endif()
 
 target_link_libraries(${target}
     PRIVATE
@@ -88,7 +87,7 @@ target_link_libraries(${target}
         SceneRdl2::scene_rdl2
         OpenGL::GL
         glfw
-        ${PlatformSpecificLibs}
+        ${CMAKE_DL_LIBS}
 )
 
 # Set standard compile/link options
@@ -104,4 +103,3 @@ endif()
 
 install(TARGETS ${target}
     RUNTIME DESTINATION bin)
-

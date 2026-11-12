@@ -11,8 +11,11 @@
 #include <moonray/rendering/rndr/PathVisualizerManager.h>
 #include <scene_rdl2/render/util/Args.h>
 #include <scene_rdl2/scene/rdl2/Camera.h>
+#include <scene_rdl2/scene/rdl2/SceneVariables.h>
 
 #include <algorithm>
+#include <filesystem>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -196,6 +199,47 @@ RaasGuiApplication::startRenderThread(void* me)
 
             watchShaderDsos(*changeWatcher, *renderContext);
 
+            // Set up texture file watcher based on the texture_update_mode scene variable.
+            // A fresh watcher is created on each outer-loop iteration so that a full scene
+            // reload picks up any changes to which textures are present in the scene.
+            const scene_rdl2::rdl2::SceneVariables& sceneVars =
+                renderContext->getSceneContext().getSceneVariables();
+            const int textureUpdateMode =
+                sceneVars.get(scene_rdl2::rdl2::SceneVariables::sTextureUpdateMode);
+            const bool logInfo =
+                sceneVars.get(scene_rdl2::rdl2::SceneVariables::sInfoKey);
+
+            std::unique_ptr<moonray::ChangeWatcher> textureWatcher(
+                moonray::ChangeWatcher::CreateChangeWatcher());
+
+            // Maps absolute watched path to the set of raw attribute paths that
+            // resolve to it. One absolute path can correspond to multiple raw
+            // strings (e.g. "./tex.tx" and "tex.tx" are the same file), so we
+            // collect all of them to ensure every attribute is invalidated.
+            // Declared outside the if-block so the inner render loop can access it.
+            std::map<std::string, std::set<std::string>> watchedToRaw;
+
+            if (textureUpdateMode != 0) {
+                std::set<std::string> textureFiles;
+                collectTextureFiles(*renderContext, textureUpdateMode, textureFiles);
+                for (const auto& texFile : textureFiles) {
+                    std::string watchPath;
+                    std::error_code ec;
+                    auto absPath = std::filesystem::absolute(texFile, ec);
+                    watchPath = ec ? texFile : absPath.string();
+                    try {
+                        textureWatcher->watchFile(watchPath);
+                        watchedToRaw[watchPath].insert(texFile);
+                        if (logInfo) {
+                            std::cout << "Watching texture: " << texFile << std::endl;
+                        }
+                    } catch (const std::exception& e) {
+                        std::cerr << "ERROR: failed to watch texture '" << texFile
+                                  << "': " << e.what() << std::endl;
+                    }
+                }
+            }
+
             // Record camera location the first time around so that we can maintain
             // positioning between dso/shader changes.
             const rdl2::Camera *camera = renderContext->getCamera();
@@ -353,6 +397,64 @@ RaasGuiApplication::startRenderThread(void* me)
                     // Get out of this loop to pick up changes.
                     std::cout << "Scene change detected." << std::endl;
                     break;
+                }
+
+                // Check for texture file changes and apply them as a delta update.
+                if (textureUpdateMode != 0) {
+                    std::set<std::string> changedWatchPaths;
+                    if (textureWatcher->hasChanged(&changedWatchPaths)) {
+                        // Map watched absolute paths back to raw attribute paths.
+                        std::set<std::string> changedRawPaths;
+                        for (const auto& wp : changedWatchPaths) {
+                            auto it = watchedToRaw.find(wp);
+                            if (it != watchedToRaw.end()) {
+                                changedRawPaths.insert(it->second.begin(),
+                                                       it->second.end());
+                            } else {
+                                changedRawPaths.insert(wp); // fallback
+                            }
+                        }
+
+                        if (logInfo) std::cout << "Texture change detected." << std::endl;
+
+                        currCameraXform = self->mRenderGui->endInteractiveRendering();
+
+                        // Step 1: Clear the OIIO TextureSystem cache, but only
+                        // for files used by Map shaders (which go through
+                        // BasicTexture/TextureSampler). Lights load textures via
+                        // ImageDistribution/ImageInput directly and are not in
+                        // the TextureSystem cache; passing their paths to
+                        // invalidateTextureResources causes a spurious
+                        // 'Unable to read texture file' error from imagespec().
+                        std::vector<std::string> changedVec;
+                        {
+                            const scene_rdl2::rdl2::SceneContext& ctx =
+                                renderContext->getSceneContext();
+                            for (auto it = ctx.beginSceneObject();
+                                 it != ctx.endSceneObject(); ++it) {
+                                const scene_rdl2::rdl2::SceneObject* obj = it->second;
+                                if (!obj || !obj->isA<scene_rdl2::rdl2::Map>()) continue;
+                                const scene_rdl2::rdl2::SceneClass& sc = obj->getSceneClass();
+                                for (auto a = sc.beginAttributes();
+                                     a != sc.endAttributes(); ++a) {
+                                    if (!((*a)->getFlags() & scene_rdl2::rdl2::FLAGS_FILENAME)) continue;
+                                    if ((*a)->getType() != scene_rdl2::rdl2::TYPE_STRING) continue;
+                                    const scene_rdl2::rdl2::AttributeKey<scene_rdl2::rdl2::String> key(**a);
+                                    const std::string& val = obj->get(key);
+                                    if (!val.empty() && changedRawPaths.count(val)) {
+                                        changedVec.push_back(val);
+                                    }
+                                }
+                            }
+                        }
+                        renderContext->invalidateTextureResources(changedVec);
+
+                        // Step 2: Mark scene objects referencing the changed files
+                        // as dirty so renderPrep calls their DSO update().
+                        touchTextureObjects(*renderContext, changedRawPaths);
+
+                        self->mRenderGui->beginInteractiveRendering(currCameraXform, false);
+                    }
                 }
 
                 prevFrameTimestamp = currFrameTimestamp;

@@ -24,6 +24,8 @@ class NavigationCam;
 class OrbitCam;
 class SnapshotManager;
 
+namespace pathvisualizer { class ViewController; enum class CameraMode; }
+
 /* The Viewport class holds anything related to the viewport rendering and interaction. It also interfaces with 
    the Imgui GUI management class, which handles any user menus, windows, or frontend tools. */
 class Viewport
@@ -52,6 +54,9 @@ public:
     // and returns a string containing relevant info
     std::string inspect(const int x, const int y) const;
 
+    // Take a snapshot and save to user's indicated path
+    void takeASnapshot();
+
     // Show previous/next snapshot
     void showPrevSnapshot();
     void showNextSnapshot();
@@ -59,9 +64,20 @@ public:
     // Toggle path visualizer on/off
     void pathVisualizerToggleOn();
 
+    // Switch between the stored Path Visualizer camera and the navigation camera.
+    void pathVisualizerChangeCameraMode(pathvisualizer::CameraMode mode);
+    void pathVisualizerUpdateViewController();
+    bool pathVisualizerCamIsInteractive() const;
+    bool pathVisualizerCamerasMatch() const;
+
+    // Mutable accessor for the UI checkbox
+    bool& pathVisualizerShowOnlyEndpoints() { return mPVShowOnlyEndpoints; }
+    // Read-only getter for mPVShowOnlyEndpoints
+    bool pathVisualizerShowOnlyEndpoints() const { return mPVShowOnlyEndpoints; }
+
     // Select the next/prev node
-    void prevPathVisualizerNode();
-    void nextPathVisualizerNode();
+    void pathVisualizerPrevNode();
+    void pathVisualizerNextNode();
 
     // -------------------------------------- Getters --------------------------------------- //
     // Checks if the GLFW window has been closed
@@ -148,8 +164,6 @@ public:
         return mRenderContext->getPathVisualizerManager().get(); 
     };
 
-    bool getPVShowOnlyEndpoints() const { return mPVShowOnlyEndpoints; }
-
     // Get whether to update the navigation lines
     bool getUpdateAxis() const { return mUpdateAxis; }
 
@@ -163,7 +177,7 @@ public:
     void setCameraRenderContext(RenderContext &context);
 
     // Updates the render context pointer (called when RenderContext is recreated)
-    void updateRenderContext(RenderContext* context) { mRenderContext = context; }
+    void updateRenderContext(RenderContext* context);
 
     // Sets the default camera transform
     void setDefaultCameraTransform(const scene_rdl2::math::Mat4f &xform);
@@ -183,8 +197,20 @@ public:
     // Sets whether we need to update the navigation lines
     void setUpdateAxis(const bool update) { mUpdateAxis = update; }
 
-    // Sets the path visualizer setting to show only endpoints
-    void setPVShowOnlyEndpoints(const bool show) { mPVShowOnlyEndpoints = show; }
+    bool inputIsBlocked() const
+    {
+        return mInputBlocked;
+    }
+
+    void blockInput()
+    {
+        mInputBlocked = true;
+    }
+
+    void unblockInput()
+    {
+        mInputBlocked = false;
+    }
 
 private:
     // Uses the framebuffer data to update the viewport display
@@ -252,9 +278,6 @@ private:
     // Turn opencolorio management on/off
     void toggleOCIO();
 
-    // Take a snapshot and save to user's indicated path
-    void takeASnapshot();
-
     // Turn on/off tile progress overlay
     void toggleShowTileProgress();
 
@@ -269,7 +292,7 @@ private:
     void nextRenderOutput();
 
     // Select the pixel for the path visualizer
-    void setPathVisualizerPixel();
+    void pathVisualizerPickPixel();
 
     /// ---------------------------------------------------------------///
 
@@ -280,6 +303,9 @@ private:
     std::unique_ptr<SnapshotManager> mSnapshotManager;          // Ptr to manager for snapshot taking and saving
     const std::unique_ptr<Keyboard> mKeyboard {};               // Ptr to key/mouse binding information
     DenoiserManager* mDenoiserManager {nullptr};                // Ptr to denoiser manager
+
+    std::unique_ptr<pathvisualizer::ViewController> mPathVisViewController {nullptr};
+    bool mPVShowOnlyEndpoints {false};                          // Whether to show only endpoints in the path visualizer
     
     // Frame data
     const fb_util::Rgb888Buffer* mRgbBuffer {nullptr};          // Pointer to the current RGB888 framebuffer
@@ -294,6 +320,7 @@ private:
 
     bool mNeedsRefresh {true};                                  // Does the viewport need to be refreshed?
     bool mInitialResizeDone {false};                            // Whether the viewport has been sized to fit the render
+    bool mInputBlocked {false};                                 // Whether hotkey input is currently blocked
 
     DebugMode mDebugMode {RGB};                                 // Current debug mode (i.e. channel being viewed)
     bool mShowTileProgress {true};                              // Whether to show tile progress overlay
@@ -323,8 +350,6 @@ private:
     scene_rdl2::math::Vec2f mAxisXDir;                          // Navigation direction vector for the X axis
     scene_rdl2::math::Vec2f mAxisYDir;                          // Navigation direction vector for the Y axis
     scene_rdl2::math::Vec2f mAxisZDir;                          // Navigation direction vector for the Z axis
-
-    bool mPVShowOnlyEndpoints {false};                          // if path visualizer should only display endpoints
 };
    
 } // namespace moonray_gui_v2

@@ -60,10 +60,6 @@ target_sources(${target}
         ${crtObjs}
 )
 
-if (NOT IsDarwinPlatform)
-    set(PlatformSpecificLibs atomic)
-endif()
-
 target_link_libraries(${target}
     PRIVATE
         McrtDenoise::denoiser
@@ -81,7 +77,6 @@ target_link_libraries(${target}
         Qt5::Core
         Qt5::Gui
         Qt5::OpenGL
-        ${PlatformSpecificLibs}
 )
 
 # Set standard compile/link options

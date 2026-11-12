@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "StatusBar.h"
+
+#include "../SnapshotManager.h"
 #include "../Viewport.h"
 
 #include "imgui.h"
@@ -57,6 +59,11 @@ StatusBar::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& do
     ImGui::Text("%s", getCameraTypeStr(viewport->getActiveCameraType()).c_str());
     ImGui::SameLine(0.0f, mLargeSpace);
     ImGui::Text("%s", getRenderOutputStr(viewport->getRenderOutputName()).c_str());
+
+    if (viewport->getSnapshotManager()->getSelectedSnapshotIdx() != -1) {
+        ImGui::SameLine(0.0f, mLargeSpace);
+        ImGui::Text("SNAP: %s", viewport->getSnapshotManager()->getSelectedSnapshotLabel().c_str());
+    }
     
     // Add help button at the end (right side) of the status bar
     ImGui::SameLine(0.0f, mButtonSpace);

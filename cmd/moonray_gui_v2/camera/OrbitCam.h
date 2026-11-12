@@ -64,12 +64,13 @@ private:
     int                      mMouseX {-1};           /// last mouse x position
     int                      mMouseY {-1};           /// last mouse y position
 
+    bool                     mFocusSet {false};
     bool                     mInitialTransformSet {false};
-    bool                     mInitialFocusSet {false};
     scene_rdl2::math::Vec3f  mInitialPosition;
     scene_rdl2::math::Vec3f  mInitialViewDir;
     scene_rdl2::math::Vec3f  mInitialUp;
     float                    mInitialFocusDistance {1.0f};
+    bool                     mInitialFocusDistanceNeedsUpdate {false};
 };
 
 } // namespace moonray_gui_v2

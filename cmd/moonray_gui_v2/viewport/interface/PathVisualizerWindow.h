@@ -14,6 +14,8 @@ namespace moonray { namespace rndr { class PathVisualizerManager; }}
 
 namespace moonray_gui_v2 {
 
+using PathVisualizerManager = moonray::rndr::PathVisualizerManager;
+
 class PathVisualizerWindow : public Component {
 /* This window manages the UI for the path visualizer settings and controls. It is by 
  * default docked on the righthand side of the viewport, and can be opened using the hotkey
@@ -38,19 +40,18 @@ class PathVisualizerWindow : public Component {
         void configureWindow(const ImVec2& dockOffset) const;
 
         // Draw enable/disable button
-        void drawEnableButton();
+        void drawEnableButton(PathVisualizerManager* manager);
 
         // Draw various submenus
-        void drawPixelSelector();
-        void drawSamplingSettingsMenu();
-        void drawMaxDepthMenu();
-        void drawVisibilityTogglesMenu();
+        void drawPixelSelector(Viewport* viewport);
+        void drawSamplingSettingsMenu(PathVisualizerManager* manager);
+        void drawMaxDepthMenu(PathVisualizerManager* manager);
+        void drawVisibilityTogglesMenu(PathVisualizerManager* manager);
         void drawStyleMenu(Viewport* viewport);
-        void drawMiscMenu();
-        void drawNodeInfo();
+        void drawMiscMenu(PathVisualizerManager* manager);
+        void drawNodeInfo(PathVisualizerManager* manager);
 
-        moonray::rndr::PathVisualizerManager* mManager {nullptr};  // Pointer to the path visualizer manager
-        int mWidth {250};                                          // Width of the window
+        int mWidth {250};                   // Width of the window
 
         // Slider limits
         float mItemSpacing {8.f};

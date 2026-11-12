@@ -12,9 +12,7 @@ ExposureWindow::configureWindow() const
 {
     // Center the window in the viewport when first opened
     ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
-    ImVec2 position((imguiViewport->Size.x - mWidth) * 0.5f, (imguiViewport->Size.y - mHeight) * 0.5f);
-
-    ImGui::SetNextWindowPos(position, ImGuiCond_Once);
+    ImGui::SetNextWindowPos(imguiViewport->GetCenter(), ImGuiCond_Once, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(mWidth, mHeight), ImGuiCond_Once);
 }
 

@@ -93,7 +93,7 @@ const std::set<Action> VISUALIZATION_ACTIONS = {
 // -------------------------------------- Key Capture Class ------------------------------------------------------------
 
 void
-KeyCapture::startCapture(const Action action)
+KeyCapture::startCapture(Viewport* viewport, const Action action)
 {
     if (mState == State::IDLE) {
         // Initialize capture state
@@ -102,11 +102,12 @@ KeyCapture::startCapture(const Action action)
         mPendingKey = -1;
         mPendingMod = 0;
         mCapturedKeys.clear();
+        viewport->blockInput();
     }
 }
 
 void
-KeyCapture::update()
+KeyCapture::update(Viewport* viewport)
 {
     if (mState != State::CAPTURING) {
         return;
@@ -116,6 +117,7 @@ KeyCapture::update()
     if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
         mState = State::CANCELLED;
         mCapturedKeys.clear();
+        viewport->unblockInput();
         return;
     }
 
@@ -135,7 +137,7 @@ KeyCapture::update()
         // Check if capture duration has elapsed
         if (mTimer.getDurationMs() >= mCaptureDurationMs) {
             mTimer.end();
-            finishCapture();
+            finishCapture(viewport);
         }
     }
 }
@@ -176,8 +178,9 @@ KeyCapture::detectModifiers()
 }
 
 void
-KeyCapture::finishCapture()
+KeyCapture::finishCapture(Viewport* viewport)
 {
+    viewport->unblockInput();
     if (mCapturedKeys.empty()) {
         mState = State::CANCELLED;
         return;
@@ -259,7 +262,7 @@ void
 KeyBindingsWindow::processKeyCapture(Viewport* viewport)
 {
     // Update the capture state - this must be called every frame
-    mKeyCapture.update();
+    mKeyCapture.update(viewport);
 
     // Check if capture just completed
     if (mKeyCapture.isCompleted() && !mShowOverrideConfirm) {
@@ -393,7 +396,7 @@ KeyBindingsWindow::drawKeyboardModeDropdown(Keyboard* keyboard)
 }
 
 void
-KeyBindingsWindow::drawKeyBindingButton(Keyboard* keyboard, const Action action)
+KeyBindingsWindow::drawKeyBindingButton(Viewport* viewport, const Action action)
 {
     // Make the key binding display clickable
     ImGui::PushID(action);
@@ -419,7 +422,7 @@ KeyBindingsWindow::drawKeyBindingButton(Keyboard* keyboard, const Action action)
     if (action == ACTION_IMAGE2D_ZOOM) { ImGui::BeginDisabled(); }
 
     if (ImGui::Button(keyBindingStr.c_str(), buttonSize)) {
-        mKeyCapture.startCapture(action);
+        mKeyCapture.startCapture(viewport, action);
     }
 
     if (action == ACTION_IMAGE2D_ZOOM) { ImGui::EndDisabled(); }
@@ -435,7 +438,7 @@ KeyBindingsWindow::drawKeyBindingButton(Keyboard* keyboard, const Action action)
             
     if (ImGui::BeginPopup("key_context_menu")) {
         if (ImGui::MenuItem("Reset to Default")) {
-            resetBindingToDefault(keyboard, action, /*forceOverride*/ false);
+            resetBindingToDefault(viewport->getKeyboard(), action, /*forceOverride*/ false);
         }
         ImGui::EndPopup();
     }     
@@ -443,7 +446,7 @@ KeyBindingsWindow::drawKeyBindingButton(Keyboard* keyboard, const Action action)
 }
 
 void
-KeyBindingsWindow::drawKeyBindingTable(std::string header, const std::set<Action>& actions, Keyboard* keyboard)
+KeyBindingsWindow::drawKeyBindingTable(std::string header, const std::set<Action>& actions, Viewport* viewport)
 {
     ImGui::Spacing();
     ImGui::Spacing();
@@ -468,7 +471,7 @@ KeyBindingsWindow::drawKeyBindingTable(std::string header, const std::set<Action
 
                 // Second column (key binding)
                 ImGui::TableSetColumnIndex(1);
-                drawKeyBindingButton(keyboard, action);
+                drawKeyBindingButton(viewport, action);
 
             }
             ImGui::EndTable();
@@ -523,10 +526,8 @@ KeyBindingsWindow::configureWindow() const
 
     // ---- Set permanent position & size ----
     ImVec2 size = ImVec2(mWidth, imguiViewport->Size.y - mHeightPadding);
-    ImVec2 position = ImVec2((imguiViewport->Size.x - size.x) * 0.5f, 
-                             (imguiViewport->Size.y - size.y) * 0.5f);
     ImGui::SetNextWindowSize(size);
-    ImGui::SetNextWindowPos(position);
+    ImGui::SetNextWindowPos(imguiViewport->GetCenter(), ImGuiCond_Once, ImVec2(0.5f, 0.5f));
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(mWindowPadding, mWindowPadding));
 }
@@ -565,7 +566,7 @@ KeyBindingsWindow::draw(Viewport* viewport, const ImVec2& currentPixel, const Im
             // Scrollable content section
             if (ImGui::BeginChild("ContentSection", ImVec2(0, 0), ImGuiChildFlags_None)) {
                 for (const auto& [categoryName, categoryActions] : ACTION_CATEGORIES) {
-                    drawKeyBindingTable(categoryName.c_str(), categoryActions, keyboard);
+                    drawKeyBindingTable(categoryName.c_str(), categoryActions, viewport);
                 }
                 ImGui::EndChild();
             }

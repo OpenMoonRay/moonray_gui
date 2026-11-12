@@ -1,4 +1,3 @@
-
 // Copyright 2026 DreamWorks Animation LLC
 // SPDX-License-Identifier: Apache-2.0
 
@@ -116,10 +115,6 @@ Interface::~Interface()
 bool
 Interface::handleKeyPressEvent(const Action action)
 {
-    // If we are currently capturing a new keybinding, only 
-    // the key bindings window should handle the input
-    if (mKeyBindingsWindow->isCapturing()) { return true; }
-
     switch(action) {
     case ACTION_WINDOW_TOGGLE_EXPOSURE:         toggleExposureWindow();              return true;
     case ACTION_WINDOW_TOGGLE_GAMMA:            toggleGammaWindow();                 return true;
@@ -129,11 +124,12 @@ Interface::handleKeyPressEvent(const Action action)
     case ACTION_WINDOW_TOGGLE_SCENE_INSPECTOR:  toggleSceneInspector();              return true;
     case ACTION_WINDOW_TOGGLE_SNAPSHOT:         toggleSnapshotWindow();              return true;
     case ACTION_WINDOW_TOGGLE_STATUS:           toggleStatusBar();                   return true;
+    case ACTION_SNAPSHOT_TAKE:                  mViewport->takeASnapshot();          return true;
     case ACTION_SNAPSHOT_PREV:                  mViewport->showPrevSnapshot();       return true;
     case ACTION_SNAPSHOT_NEXT:                  mViewport->showNextSnapshot();       return true;
     case ACTION_PATH_VISUALIZER_ON_OFF:         mViewport->pathVisualizerToggleOn(); return true;
-    case ACTION_PATH_VISUALIZER_NEXT_NODE:      mViewport->nextPathVisualizerNode(); return true;
-    case ACTION_PATH_VISUALIZER_PREV_NODE:      mViewport->prevPathVisualizerNode(); return true;
+    case ACTION_PATH_VISUALIZER_NEXT_NODE:      mViewport->pathVisualizerNextNode(); return true;
+    case ACTION_PATH_VISUALIZER_PREV_NODE:      mViewport->pathVisualizerPrevNode(); return true;
     case ACTION_WINDOW_TOGGLE_AXIS_DISPLAY:     toggleAxisDisplay();                 return true;
     default: break;
     }

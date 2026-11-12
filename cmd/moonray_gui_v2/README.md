@@ -1,4 +1,4 @@
-# Moonray gui v2
+# moonray_gui_v2
 
 moonray_gui_v2 is an imgui-based application (glfw/opengl3) that replaces the existing QT
 application. It currently builds on both linux and mac.
@@ -30,7 +30,7 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 | Speed Up | `E` | |
 | Reset | `R` | |
 | Recenter | `F` | |
-| Frame Scene | `SHIFT` + `F` | new |
+| Frame Scene | `SHIFT` + `F` | new in v2 |
 | Print Matrices* | `M` | Previously `T` |
 | Set Up Vector | `U` | |
 | Orbit* | `ALT`+`LMB` | FreeCam previously used `LMB` only |
@@ -66,7 +66,6 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 | Exposure Reset | `SHIFT`+`X` |
 | Gamma Adjust | `Y`+`LMB` |
 | Gamma Reset | `SHIFT`+`Y` |
-| OCIO Toggle | `Z` |
 
 ### Fast Progressive Mode Hotkeys
 | Action | Hotkey |
@@ -81,7 +80,7 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 | Open/Close Key Bindings Editor | `G` | new in v2 |
 | Open/Close Pixel Inspector | `P` | new in v2 |
 | Open/Close Scene Inspector | `I` | now opens a window instead of printing info to console |
-| Open/Close Snapshot Viewer | `ALT` + `K` |
+| Open/Close Snapshot Viewer | `ALT` + `K` | new in v2 |
 | Open/Close Status Bar | `ALT` + `S` | new in v2 |
 | Open/Close Exposure Editor* | `ALT` + `X` | Previously `X` |
 | Open/Close Gamma Editor* | `ALT` + `Y` | Previously `Y` |
@@ -90,19 +89,23 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 
 ### Path Visualizer
 | Action | Hotkey | Notes |
+| ------ | ------ | ----- |
 | Toggle On/Off | `SHIFT` + `V` | |
-| Pick pixel | `LMB` | |
-| Previous node | `SHIFT` + `LEFT` | |
-| Next node | `SHIFT` + `RIGHT` | |
+| Pick pixel | `LMB` | just click the pixel you want to see the ray tree for |
+| Previous node | `SHIFT` + `LEFT` | selects the previous node (displays path vertex information in the path visualizer menu) |
+| Next node | `SHIFT` + `RIGHT` | selects the next node (display path vertex information in the path visualizer menu) |
 
 ### Miscellaneous Hotkeys
 | Action | Hotkey | Notes |
 | ------ | ------ | ----- |
 | Render Output Previous | `,` | |
 | Render Output Next | `.` | |
-| Save Image* | `CTRL`+`S` | Didn't exist in v1 |
-| Snapshot Take | `K` | |
+| Save Image* | `CTRL`+`S` | new in v2 |
+| Take Snapshot | `K` | |
+| Next Snapshot | `RIGHT` | new in v2, toggle next snapshot |
+| Prev Snapshot | `LEFT` | new in v2, toggle prev snapshot |
 | Tile Progress Toggle* | `T` | Previously `P` |
+| Print Key Bindings | `H` | prints keybindings to console |
 
 ## Configuration Files
 
@@ -116,4 +119,8 @@ The following files are stored there:
 - (Future: keybindings)
 
 The config directory is created automatically on first run. If creation fails, settings will not persist between sessions.
+
+For snapshots, the user provides a snapshot directory, and moonray_gui_v2 creates `snapshots.txt` in this directory. This file stores the snapshots in order, along with their assigned labels, in the format:
+
+filename|label
 
